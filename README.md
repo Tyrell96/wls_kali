@@ -306,6 +306,83 @@ htb && mkdir <머신명> && cd <머신명>
 # 4. 스캔 시작
 htbscan <머신명> <IP>
 ```
+# WSL2 클립보드 연동 문제 해결
+
+> **환경:** Windows 11 + WSL2 (Kali Linux)
+> **증상:** WSL 터미널에서 복사한 텍스트가 외부 앱에서 깨져서 붙여넣어짐
+
+---
+
+## 원인
+
+WSL2 ↔ Windows 클립보드 interop이 비활성화된 상태.  
+`/etc/wsl.conf` 에 interop 설정이 없거나 disabled 상태일 때 발생.
+
+---
+
+## 진단
+
+```bash
+# clip.exe 연동 확인
+echo "test" | clip.exe
+```
+
+- 정상: Windows 클립보드에 "test" 복사됨
+- 비정상: 에러 또는 아무 반응 없음
+
+```bash
+# wsl.conf 확인
+cat /etc/wsl.conf
+```
+
+---
+
+## 해결
+
+### 1. wsl.conf 설정 추가
+
+```bash
+sudo tee /etc/wsl.conf > /dev/null << 'EOF'
+[interop]
+enabled=true
+appendWindowsPath=true
+EOF
+```
+
+### 2. WSL 재시작 (PowerShell)
+
+```powershell
+wsl --shutdown
+```
+
+이후 Kali 터미널 다시 열기.
+
+### 3. 동작 확인
+
+```bash
+echo "클립보드 테스트" | clip.exe
+```
+
+Windows 메모장 등에 붙여넣기로 확인.
+
+---
+
+## 참고
+
+| 방향 | 상태 |
+|------|------|
+| Windows → WSL | 기본 동작 |
+| WSL → Windows | interop 설정 필요 |
+
+---
+
+## 트러블슈팅
+
+| 문제 | 해결 |
+|------|------|
+| `clip.exe: command not found` | `appendWindowsPath=true` 설정 후 재시작 |
+| 설정 후에도 안 됨 | `wsl --shutdown` 후 재시작 필수 |
+| 한글 깨짐 | 터미널 인코딩 `UTF-8` 확인 |
 
 ---
 
