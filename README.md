@@ -1,6 +1,4 @@
-# wls_kali
-
-# Kali Linux WSL2 Setup (HTB 환경)
+# Kali Linux WSL2 Setup (HTB 환경) — 최종본
 
 > **환경:** Windows 11 + WSL2 + Windows Terminal
 > **날짜:** 2026-03-17
@@ -23,7 +21,7 @@ wsl -l -v  # 설치 확인
 
 ---
 
-## 1. Windows Terminal — Nord 테마
+## 1. Windows Terminal — Nord 테마 + 단축키 설정
 
 `Ctrl+,` → JSON 파일 열기
 
@@ -71,6 +69,16 @@ wsl -l -v  # 설치 확인
 }
 ```
 
+### `"actions"` 배열에 추가 (Alt+방향키 Windows Terminal 차단 해제)
+> Alt+방향키를 zsh 커서 이동용으로 쓰기 위해 Windows Terminal이 가로채지 않도록 설정
+
+```json
+"actions": [
+    { "command": "unbound", "keys": "alt+left" },
+    { "command": "unbound", "keys": "alt+right" }
+],
+```
+
 ---
 
 ## 2. Zsh + Oh My Zsh + Powerlevel10k
@@ -100,11 +108,24 @@ sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting
 echo 'export PATH=$PATH:~/go/bin' >> ~/.zshrc
 echo 'export PIP_BREAK_SYSTEM_PACKAGES=1' >> ~/.zshrc
 
+# Alt+방향키 단어 단위 커서 이동
+cat >> ~/.zshrc << 'EOF'
+
+# ── Alt+방향키 단어 단위 이동 ──────────────────────
+bindkey "^[[1;3C" forward-word            # Alt+Right
+bindkey "^[[1;3D" backward-word           # Alt+Left
+bindkey "^[[1;3A" history-search-backward # Alt+Up
+bindkey "^[[1;3B" history-search-forward  # Alt+Down
+EOF
+
 # tmux 자동 실행
-echo '
+cat >> ~/.zshrc << 'EOF'
+
+# ── tmux 자동 실행 ─────────────────────────────────
 if [ -z "$TMUX" ]; then
   tmux attach -t main 2>/dev/null || tmux new -s main
-fi' >> ~/.zshrc
+fi
+EOF
 
 source ~/.zshrc
 # → p10k 설정 마법사 자동 실행, 폰트 깨짐 없으면 y로 진행
@@ -146,11 +167,19 @@ bind -n M-v split-window -h -c "#{pane_current_path}"
 bind -n M-s split-window -v -c "#{pane_current_path}"
 bind -n M-c new-window -c "#{pane_current_path}"
 
-# ── pane 이동 (Alt+방향키) ─────────────────────────
-bind -n M-Left  select-pane -L
-bind -n M-Right select-pane -R
-bind -n M-Up    select-pane -U
-bind -n M-Down  select-pane -D
+# ── pane 이동 (Ctrl+방향키) ────────────────────────
+unbind -n M-Left
+unbind -n M-Right
+unbind -n M-Up
+unbind -n M-Down
+unbind -n C-Left
+unbind -n C-Right
+unbind -n C-Up
+unbind -n C-Down
+bind -n C-Left  select-pane -L
+bind -n C-Right select-pane -R
+bind -n C-Up    select-pane -U
+bind -n C-Down  select-pane -D
 
 # ── 윈도우 이동 (Alt+숫자) ─────────────────────────
 bind -n M-1 select-window -t 1
@@ -182,14 +211,16 @@ tmux 안에서: Ctrl+a → Shift+I
 설치 완료 후: Ctrl+a → r
 ```
 
-### tmux 단축키 요약
+### 단축키 요약
 
 | 동작 | 키 |
 |------|-----|
 | 좌우 분할 | `Alt+v` |
 | 상하 분할 | `Alt+s` |
 | 새 윈도우 | `Alt+c` |
-| pane 이동 | `Alt+방향키` |
+| pane 이동 | `Ctrl+방향키` |
+| 단어 단위 커서 이동 | `Alt+Left / Right` |
+| 히스토리 검색 | `Alt+Up / Down` |
 | 윈도우 이동 | `Alt+숫자` |
 | pane 닫기 | `Alt+w` |
 | 설정 리로드 | `Ctrl+a → r` |
@@ -286,3 +317,5 @@ htbscan <머신명> <IP>
 | Kali 프로필 Windows Terminal 미등록 | `"source": "Microsoft.WSL"` → `"commandline": "wsl -d kali-linux"` 로 교체 |
 | nmap/sqlmap command not found | `sudo apt install -y nmap sqlmap` 재설치 |
 | ffuf/httpx command not found | `echo 'export PATH=$PATH:~/go/bin' >> ~/.zshrc && source ~/.zshrc` |
+| Ctrl+방향키 tmux로 전달 안 됨 | Windows Terminal `"actions"` 에 `unbound` 추가 |
+| Alt+방향키 대문자 출력됨 | `~/.zshrc` 에 `bindkey "^[[1;3C"` 등 escape sequence 매핑 추가 |
